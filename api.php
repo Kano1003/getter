@@ -1,5 +1,6 @@
 <?php
 date_default_timezone_set('Asia/Tokyo');
+require_once('test-log.php');
 
 // 接続用
 function curl($url)
@@ -16,8 +17,9 @@ function curl($url)
 }
 
 // 変数の初期化
-$url = $livechat_id = $page_token = null;
+$url = $livechat_id = $page_token = $switch_data = null;
 $res = $supers  = array();
+$detect_test = false;
 $result = array('livechat_id' => $livechat_id, 'page_token' => $page_token, 'supers' => $supers);
 $received_data = json_decode(file_get_contents('php://input', true));
 
@@ -28,7 +30,15 @@ if (!empty($received_data->{'streamId'}) && empty($received_data->{'liveChatId'}
     $url .= $received_data->{'streamId'};
     $url .= '&key={API_KEY}';
 
-    $res = json_decode(curl($url), true);
+    if ($received_data->{'streamId'} === '#test') {
+        $detect_test = true;
+    }
+
+    if (!$detect_test) {
+        $res = json_decode(curl($url), true);
+    } else {
+        $res = $first_return;
+    }
 
     // 取得が出来ていない場合の処理
     if (!count($res['items'])) {
@@ -52,9 +62,33 @@ if (!empty($received_data->{'streamId'}) && empty($received_data->{'liveChatId'}
     $url .= $received_data->{'pageToken'};
 
     $livechat_id = $received_data->{'liveChatId'};
+
+    if ($received_data->{'liveChatId'} === 'thisIsTestId') {
+        $detect_test = true;
+    }
 }
 
-$res = json_decode(curl($url), true);
+if (!$detect_test) {
+    $res = json_decode(curl($url), true);
+} else {
+    if (!empty($received_data->{'pageToken'})) {
+        $switch_data = $received_data->{'pageToken'};
+    }
+
+    switch ($switch_data) {
+        case 'testNextPageToken':
+            $res = $third_return;
+            break;
+
+        case 'testLastPageToken':
+            $res = $fourth_return;
+            break;
+
+        default:
+            $res = $second_return;
+            break;
+    }
+}
 
 // 接続チェック
 if (!isset($res['error'])) {

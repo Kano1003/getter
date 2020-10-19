@@ -207,21 +207,7 @@
         };
 
         // 接続（初回）
-        const first = await connect('api.php', firstData).then(result => {
-            return result.json();
-        }).then(json => {
-            const secondData = {
-                "liveChatId": json.livechat_id,
-                "pageToken": json.page_token
-            };
-            return secondData;
-        }).catch(error => {
-            const errorData = {
-                "liveChatId": null,
-                "pageToken": null
-            };
-            return errorData;
-        });
+        const first = await callAPI(firstData);
 
         // 接続（ループ）
         const run = await connectRepeat(first);
